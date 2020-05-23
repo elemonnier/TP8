@@ -31,38 +31,40 @@
     $password = 'new_password';
     $idcon = connexpdo($dsn, $user, $password);
 
-    $query1 = "SELECT * FROM citation";
-    $result1 = $idcon->query($query1);
-    $i = 0;
-    foreach($result1 as $data)
-    {
-        $i++;
+    $r = $idcon->prepare("SELECT id from citation");
+    $r->execute();
+    $r = $r->fetchAll();
+
+    $idCitations = [];
+    for($counter = 0; $counter < count($r); $counter++){
+        array_push($idCitations, $r[$counter][0]);
     }
-    echo $i;
+    echo count($r);
         ?></strong> citations répertoriées.</h4>
     <br>
 <h4>Et voici l'une d'entre elles qui est générée aléatoirement :</h4>
 <br>
 <strong><?php
-    $randint = random_int(1, $i); // todo gerer mais osef
-    $query2 = "SELECT phrase FROM citation WHERE id = $randint";
+
+    $randint = random_int(0, count($r)-1);
+    $query2 = "SELECT phrase FROM citation WHERE id = ?";
     $result2 = $idcon->prepare($query2);
-    $result2->execute();
+    $result2->execute([$r[$randint][0]]);
     $res2 = $result2->fetch();
     echo $res2[0];
     ?> <br>
     <?php
-    $query3 = "SELECT a.nom, a.prenom FROM citation c, auteur a WHERE (c.auteurid = a.id AND c.id = $randint)";
+    $query3 = "SELECT a.nom, a.prenom FROM citation c, auteur a WHERE (c.auteurid = a.id AND c.id = ?)";
     $result3 = $idcon->prepare($query3);
-    $result3->execute();
+    $result3->execute([$r[$randint][0]]);
     $res3 = $result3->fetch();
     echo $res3[0];
 
     ?>
     (<?php
-    $query4 = "SELECT s.numero FROM siecle s, citation c WHERE (c.siecleid = s.id AND c.id = $randint)";
+    $query4 = "SELECT s.numero FROM siecle s, citation c WHERE (c.siecleid = s.id AND c.id = ?)";
     $result4 = $idcon->prepare($query4);
-    $result4->execute();
+    $result4->execute([$r[$randint][0]]);
     $res4 = $result4->fetch();
     echo $res4[0];
     ?><sup>ème</sup> siècle)

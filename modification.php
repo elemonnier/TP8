@@ -58,15 +58,19 @@ $user = 'postgres';
 $password = 'new_password';
 $idcon = connexpdo($dsn, $user, $password);
 
-$query1 = "SELECT * FROM citation";
-$result1 = $idcon->query($query1);
+
 $i = 1;
-foreach($result1 as $data) {
-    $query2 = "SELECT id FROM citation where id = ?";
-    $result2 = $idcon->prepare($query2);
-    $result2->execute(array($i));
-    $res2 = $result2->fetch();
-    $i++;
+$alreadyUsedId = true;
+while ($alreadyUsedId){
+    $result = $idcon->prepare("SELECT COUNT(*) FROM citation WHERE id = ?");
+    $result->execute([$i]);
+    $result = $result->fetch();
+    if($result[0] == 0){
+        $alreadyUsedId = false;
+    }
+    else {
+        $i++;
+    }
 }
 
 if ($_POST['ajouter'] && $_POST['1'] && $_POST['2'] && $_POST['3'] && $_POST['4'] && $_POST['5'] && $_POST['6'] ) {
@@ -76,11 +80,11 @@ if ($_POST['ajouter'] && $_POST['1'] && $_POST['2'] && $_POST['3'] && $_POST['4'
     $sqlR->execute([$_POST['1'], $_POST['2'], $_POST['3']]);
     $sql = "INSERT INTO citation (id, phrase, auteurid, siecleid) VALUES (?, ?, ?, ?)";
     $sqlR = $idcon->prepare($sql);
-    $sqlR->execute([$i + 1, $_POST['6'], $_POST['1'], $_POST['4']]);
+    $sqlR->execute([$i, $_POST['6'], $_POST['1'], $_POST['4']]);
     $sql = "INSERT INTO siecle (id, numero) VALUES (?, ?)";
     $sqlR = $idcon->prepare($sql);
     $sqlR->execute([$_POST['4'], $_POST['5']]);
-    echo "<h4>Cette citation a bien été ajoutée à la BDD</h4>";
+    header('Location: modification.php');
 }
 ?>
 
@@ -91,15 +95,16 @@ if ($_POST['ajouter'] && $_POST['1'] && $_POST['2'] && $_POST['3'] && $_POST['4'
         <label for="exampleFormControlSelect1">Sélectionner l'ID d'une citation</label>
         <select class="form-control" id="exampleFormControlSelect1" name="sup">
             <?php
+            $r = $idcon->prepare("SELECT id from citation");
+            $r->execute();
+            $r = $r->fetchAll();
 
-            for ($j = 1; $j <= $i; $j++){
-                $query2 = "SELECT id FROM citation where id = ?";
-                $result2 = $idcon->prepare($query2);
-                $result2->execute(array($j));
-                $res2 = $result2->fetch();
-                if ($res2[0] != "") {
-                    echo "<option>" . $res2[0] . "</option>";
-                }
+            $idCitations = [];
+            for($counter = 0; $counter < count($r); $counter++){
+                array_push($idCitations, $r[$counter][0]);
+            }
+            for ($counter = 0; $counter < count($idCitations); $counter++) {
+                echo "<option>" . $idCitations[$counter] . "</option>";
             }
             ?>
         </select>
@@ -111,9 +116,12 @@ if ($_POST['supprimer']) {
     $sql = "DELETE from citation WHERE id = ?";
     $sqlR = $idcon->prepare($sql);
     $sqlR->execute([$_POST['sup']]);
-    echo "<h4>La citation ".$_POST['sup']." a bien été supprimée !</h4>";
+    header('Location: modification.php');
 }
 ?>
+
+
+
 <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
